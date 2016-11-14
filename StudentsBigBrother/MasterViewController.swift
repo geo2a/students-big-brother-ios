@@ -17,19 +17,15 @@ class MasterViewController: UITableViewController {
     var siteNames: [String]?
     var siteAddresses: [String]?
     
-    var files: [String: AnyObject]?
+    var files: [[String: AnyObject]]?
+    var students: [AnyObject]?
+    var student_ids: [Int]?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        siteNames = ["Yahoo", "Google", "Apple", "Bing"]
-        siteAddresses = ["https://www.yahoo.com",
-            "https://www.google.com",
-            "https://www.apple.com",
-            "https://www.bing.com"]
-        
-        let todoEndpoint: String = "http://54.213.202.245:8083/files"
-        guard let url = URL(string: todoEndpoint) else {
+        let endpoint: String = "http://54.213.202.245:8083/files"
+        guard let url = URL(string: endpoint) else {
             print("Error: cannot create URL")
             return
         }
@@ -37,7 +33,7 @@ class MasterViewController: UITableViewController {
         let urlRequest = URLRequest(url: url)
         
         let config = URLSessionConfiguration.default
-        let userPasswordString = "login:password"
+        let userPasswordString = "123:123 "
         let userPasswordData = userPasswordString.data(using: String.Encoding.utf8)
         let base64EncodedCredential = userPasswordData!.base64EncodedString(options: [])
         let authString = "Basic \(base64EncodedCredential)"
@@ -48,7 +44,7 @@ class MasterViewController: UITableViewController {
             (data, response, error) in
             // check for any errors
             guard error == nil else {
-                print("error calling GET on /todos/1")
+                print("error calling GET on /files")
                 print(error)
                 return
             }
@@ -59,19 +55,21 @@ class MasterViewController: UITableViewController {
             }
             // parse the result as JSON, since that's what the API provides
             do {
-                guard let todo = try JSONSerialization.jsonObject(with: responseData, options: []) as? [String: AnyObject] else {
+                guard let files = try JSONSerialization.jsonObject(with: responseData, options: []) as? [[String: AnyObject]] else {
                     print("error trying to convert data to JSON")
                     return
                 }
-                self.files = todo
-                print(self.files)
+                self.files = files
+                self.students = files.map {file in file["student"]!}
+                
+                self.student_ids = Array(Set(self.students!.map {student in student["student_id"] as! Int}))
+
             } catch  {
                 print("error trying to convert data to JSON")
                 return
             }
         }
         task.resume()
-        
         
         if let split = splitViewController {
             let controllers = split.viewControllers
@@ -80,7 +78,7 @@ class MasterViewController: UITableViewController {
                 as? DetailViewController
         }
     }
-
+    
     override func viewWillAppear(_ animated: Bool) {
         self.clearsSelectionOnViewWillAppear = self.splitViewController!.isCollapsed
         super.viewWillAppear(animated)
@@ -101,6 +99,7 @@ class MasterViewController: UITableViewController {
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "showDetail" {
+            
             if let indexPath = self.tableView.indexPathForSelectedRow {
                 let urlString = siteAddresses?[indexPath.row]
                 
@@ -125,7 +124,8 @@ class MasterViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
     {
-        return siteNames!.count
+//        return student_ids!.count
+        return 2
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -133,13 +133,13 @@ class MasterViewController: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell",
             for: indexPath)
         
-        cell.textLabel!.text = siteNames![(indexPath as NSIndexPath).row]
+//        cell.textLabel!.text = String(student_ids![(indexPath as NSIndexPath).row])
         return cell
     }
 
     override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
         // Return false if you do not want the specified item to be editable.
-        return true
+        return false
     }
 
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
@@ -150,7 +150,6 @@ class MasterViewController: UITableViewController {
             // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view.
         }
     }
-
 
 }
 
