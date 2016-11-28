@@ -25,6 +25,8 @@ class DetailViewController: UIViewController {
         if let detail = self.detailItem {
             if let label = self.detailDescriptionLabel {
                 label.text = detail.description
+//                let studentId = detail as! String
+//                label.text = studentId
             }
         }
     }

@@ -17,8 +17,8 @@ class MasterViewController: UITableViewController {
     var siteNames: [String]?
     var siteAddresses: [String]?
     
-    var files: [[String: AnyObject]]?
-    var students: [AnyObject]?
+    var files: [[String: [String: AnyObject]]]?
+    var students: [[String: AnyObject]]?
     var student_ids: [Int]?
 
     override func viewDidLoad() {
@@ -39,6 +39,7 @@ class MasterViewController: UITableViewController {
         let authString = "Basic \(base64EncodedCredential)"
         config.httpAdditionalHeaders = ["Authorization" : authString]
         
+        let semaphore = DispatchSemaphore.init(value: 0);
         let session = URLSession(configuration: config)
         let task = session.dataTask(with: urlRequest) {
             (data, response, error) in
@@ -55,7 +56,7 @@ class MasterViewController: UITableViewController {
             }
             // parse the result as JSON, since that's what the API provides
             do {
-                guard let files = try JSONSerialization.jsonObject(with: responseData, options: []) as? [[String: AnyObject]] else {
+                guard let files = try JSONSerialization.jsonObject(with: responseData, options: []) as? [[String: [String: AnyObject]]] else {
                     print("error trying to convert data to JSON")
                     return
                 }
@@ -63,13 +64,14 @@ class MasterViewController: UITableViewController {
                 self.students = files.map {file in file["student"]!}
                 
                 self.student_ids = Array(Set(self.students!.map {student in student["student_id"] as! Int}))
-
+                semaphore.signal()
             } catch  {
                 print("error trying to convert data to JSON")
                 return
             }
         }
         task.resume()
+        semaphore.wait()
         
         if let split = splitViewController {
             let controllers = split.viewControllers
@@ -99,15 +101,14 @@ class MasterViewController: UITableViewController {
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "showDetail" {
-            
             if let indexPath = self.tableView.indexPathForSelectedRow {
-                let urlString = siteAddresses?[indexPath.row]
-                
+                let studentId = indexPath.row
+
                 let controller = (segue.destination
                     as! UINavigationController).topViewController
                     as! DetailViewController
                 
-                controller.detailItem = urlString as AnyObject?
+                controller.detailItem = studentId as AnyObject?
                 controller.navigationItem.leftBarButtonItem =
                     splitViewController?.displayModeButtonItem
                 controller.navigationItem.leftItemsSupplementBackButton = true
@@ -124,8 +125,8 @@ class MasterViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
     {
-//        return student_ids!.count
-        return 2
+        // Number ob master TableView items is set to number of stundets
+        return student_ids!.count
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -133,7 +134,8 @@ class MasterViewController: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell",
             for: indexPath)
         
-//        cell.textLabel!.text = String(student_ids![(indexPath as NSIndexPath).row])
+        // Title of each master TableView item set to students last name
+        cell.textLabel!.text = String((indexPath as NSIndexPath).row)
         return cell
     }
 
