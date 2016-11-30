@@ -1,7 +1,5 @@
 # Student’s Big Brother iOS
 
-## Project description: 
-
 Main goal of this project is to develop simple iOS client app for 
 Student’s Big Brother.   
 
