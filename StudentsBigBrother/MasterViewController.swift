@@ -14,18 +14,14 @@ class MasterViewController: UITableViewController {
     var detailViewController: DetailViewController? = nil
     var objects = [AnyObject]()
     
-    var siteNames: [String]?
-    var siteAddresses: [String]?
-    
-    var files: [[String: [String: AnyObject]]]?
     var students: [[String: AnyObject]]?
     var student_ids: [Int]?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let endpoint: String = "http://54.213.202.245:8083/files"
-        guard let url = URL(string: endpoint) else {
+        let students_endpoint: String = "http://54.213.202.245:8083/students"
+        guard let url = URL(string: students_endpoint) else {
             print("Error: cannot create URL")
             return
         }
@@ -45,7 +41,7 @@ class MasterViewController: UITableViewController {
             (data, response, error) in
             // check for any errors
             guard error == nil else {
-                print("error calling GET on /files")
+                print("error calling GET on /students")
                 print(error)
                 return
             }
@@ -56,14 +52,13 @@ class MasterViewController: UITableViewController {
             }
             // parse the result as JSON, since that's what the API provides
             do {
-                guard let files = try JSONSerialization.jsonObject(with: responseData, options: []) as? [[String: [String: AnyObject]]] else {
+                guard let students = try JSONSerialization.jsonObject(with: responseData, options: []) as? [[String: AnyObject]] else {
                     print("error trying to convert data to JSON")
                     return
                 }
-                self.files = files
-                self.students = files.map {file in file["student"]!}
+                self.students = students
                 
-                self.student_ids = Array(Set(self.students!.map {student in student["student_id"] as! Int}))
+                self.student_ids = self.students!.map {student in student["student_id"] as! Int}
                 semaphore.signal()
             } catch  {
                 print("error trying to convert data to JSON")
@@ -102,7 +97,7 @@ class MasterViewController: UITableViewController {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "showDetail" {
             if let indexPath = self.tableView.indexPathForSelectedRow {
-                let studentId = indexPath.row
+                let studentId = student_ids![indexPath.row]
 
                 let controller = (segue.destination
                     as! UINavigationController).topViewController
@@ -135,7 +130,7 @@ class MasterViewController: UITableViewController {
             for: indexPath)
         
         // Title of each master TableView item set to students last name
-        cell.textLabel!.text = String((indexPath as NSIndexPath).row)
+        cell.textLabel!.text = (students![indexPath.row])["last_name"] as? String
         return cell
     }
 
