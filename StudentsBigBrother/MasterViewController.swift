@@ -103,7 +103,8 @@ class MasterViewController: UITableViewController {
                     as! UINavigationController).topViewController
                     as! DetailViewController
                 
-                controller.detailItem = studentId as AnyObject?
+                controller.detailItem = studentId
+//                controller.
                 controller.navigationItem.leftBarButtonItem =
                     splitViewController?.displayModeButtonItem
                 controller.navigationItem.leftItemsSupplementBackButton = true

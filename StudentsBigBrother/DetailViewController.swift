@@ -10,11 +10,14 @@ import UIKit
 
 class DetailViewController: UIViewController {
 
-    @IBOutlet weak var detailDescriptionLabel: UILabel!
+//    @IBOutlet weak var detailDescriptionLabel: UILabel!
+    
+
+    @IBOutlet var studentsFilesWebView: UIWebView!
     
     var files: [[String: [String: AnyObject]]]?
 
-    var detailItem: AnyObject? {
+    var detailItem: Int? {
         didSet {
             // Update the view.
             self.configureView()
@@ -23,56 +26,23 @@ class DetailViewController: UIViewController {
 
     func configureView() {
         // Update the user interface for the detail item.
+        let _ = self.view
         if let detail = self.detailItem {
-            if let label = self.detailDescriptionLabel {
-                let studentId = detail.description!
-                // Download files for given students id
-                let student_files_endpoint: String = "http://54.213.202.245:8083/files?s_id=\(studentId)"
-                guard let url = URL(string: student_files_endpoint) else {
-                    print("Error: cannot create URL")
-                    return
-                }
-                let urlRequest = URLRequest(url: url)
-                
-                let config = URLSessionConfiguration.default
-                let userPasswordString = "123:123 "
+            
+            let studentId = detail;
+            
+            if let myWebview = studentsFilesWebView {
+                let userPasswordString = "123:123 "
                 let userPasswordData = userPasswordString.data(using: String.Encoding.utf8)
                 let base64EncodedCredential = userPasswordData!.base64EncodedString(options: [])
                 let authString = "Basic \(base64EncodedCredential)"
-                config.httpAdditionalHeaders = ["Authorization" : authString]
                 
-                let semaphore = DispatchSemaphore.init(value: 0);
-                let session = URLSession(configuration: config)
-                let task = session.dataTask(with: urlRequest) {
-                    (data, response, error) in
-                    // check for any errors
-                    guard error == nil else {
-                        print("error calling GET on /students")
-                        print(error)
-                        return
-                    }
-                    // make sure we got data
-                    guard let responseData = data else {
-                        print("Error: did not receive data")
-                        return
-                    }
-                    // parse the result as JSON, since that's what the API provides
-                    do {
-                        guard let files = try JSONSerialization.jsonObject(with: responseData, options: []) as? [[String: [String: AnyObject]]] else {
-                            print("error trying to convert data to JSON")
-                            return
-                        }
-                        self.files = files
-                        semaphore.signal()
-                    } catch  {
-                        print("error trying to convert data to JSON")
-                        return
-                    }
-                }
-                task.resume()
-                semaphore.wait()
                 
-                label.text = String(files!.count)
+                let url = URL(string: "http://54.213.202.245/students/\(studentId)")
+                var request = URLRequest(url: url!)
+                request.setValue("Basic \(authString)", forHTTPHeaderField: "Authorization")
+                myWebview.scalesPageToFit = true
+                myWebview.loadRequest(request)
             }
         }
     }
